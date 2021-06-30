@@ -8,6 +8,7 @@ import com.saokanneh.auth.ui.model.response.ErrorMessages;
 import com.saokanneh.auth.ui.model.response.OperationStatusModel;
 import com.saokanneh.auth.ui.model.response.RequestOperationStatus;
 import com.saokanneh.auth.ui.model.response.UserRest;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -33,6 +34,7 @@ public class UserController {
         UserRest returnVal = new UserRest();
 
         UserDto dto = userService.getUserByUserId(id);
+
         BeanUtils.copyProperties(dto,returnVal);
 
         return returnVal;
@@ -44,8 +46,8 @@ public class UserController {
             throw new UserServiceException(ErrorMessages.MISSING_REQUIRED_FIELD.getErrorMessage());
 
         UserRest returnVal = new UserRest();
-        UserDto userDto = new UserDto();
-        BeanUtils.copyProperties(userDetails, userDto);
+        ModelMapper modelMapper = new ModelMapper();
+        UserDto userDto = modelMapper.map(userDetails, UserDto.class);
 
         UserDto createdUser = userService.createUser(userDto);
         BeanUtils.copyProperties(createdUser, returnVal);

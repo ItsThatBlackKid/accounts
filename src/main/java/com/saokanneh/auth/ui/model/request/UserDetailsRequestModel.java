@@ -1,11 +1,14 @@
 package com.saokanneh.auth.ui.model.request;
 
+import java.util.List;
+
 public class UserDetailsRequestModel {
     private String userId;
     private String firstName;
     private String lastName;
     private String email;
     private String password;
+    private List<AddressRequestModel> addresses;
 
     public String getUserId() {
         return userId;
@@ -45,6 +48,14 @@ public class UserDetailsRequestModel {
 
     public String getPassword() {
         return password;
+    }
+
+    public List<AddressRequestModel> getAddresses() {
+        return addresses;
+    }
+
+    public void setAddresses(List<AddressRequestModel> addresses) {
+        this.addresses = addresses;
     }
 
     @Override
