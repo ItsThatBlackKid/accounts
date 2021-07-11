@@ -16,12 +16,12 @@ public class AmazonSES {
     final String HTMLBODY = "<h1>Please verify your email address</h1>"
             + "<p>Thanks for registering with <a href=\"https://saokanneh.com\">saokanneh.com</a><p>"
             + "<p>You're nearly done! Please verify your email address by "
-            +"<a href=\"https://localhost:3000/users/verify?token=$tokenValue\">clicking here</a> </p>";
+            +"<a href=\"https://auth.saokanneh.com/users/verify?token=$tokenValue\">clicking here</a> </p>";
 
     final String TEXTBODY = "Please verify your email address"
             + "Thanks for registering with https://saokanneh.com"
             + "You're nearly done! Please verify your email address by following this link: "
-            +"https://localhost:3000/users/verify?token=$tokenValue";
+            +"https://auth.saokanneh.com/users/verify?token=$tokenValue";
 
     public void  verifyEmail(UserDto dto) {
         AmazonSimpleEmailService client = AmazonSimpleEmailServiceClientBuilder.standard()
