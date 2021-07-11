@@ -21,13 +21,15 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.csrf()
+        http.cors().and().csrf()
                 .disable()
                 .authorizeRequests()
                 .antMatchers(HttpMethod.POST, SecurityConstants.SIGN_UP_URL)
                 .permitAll()
-                .anyRequest().
-                authenticated()
+                .antMatchers(HttpMethod.GET, SecurityConstants.VERIFICATION_URL)
+                .permitAll()
+                .anyRequest()
+                .authenticated()
                 .and()
                 .addFilter(new AuthenticationFilter(authenticationManager()))
                 .addFilter(new AuthorizationFilter(authenticationManager()))

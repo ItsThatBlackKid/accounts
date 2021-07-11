@@ -1,20 +1,14 @@
-package com.saokanneh.auth.shared.dto;
+package com.saokanneh.auth.ui.model.response;
 
-import java.io.Serial;
-import java.io.Serializable;
+import org.springframework.hateoas.RepresentationModel;
 
-public class AddressDto implements Serializable {
-    @Serial
-    private static final long serialVersionUID = -5483857252201749164L;
-
-    private long id;
+public class AddressRest {
     private String addressId;
     private String city;
     private String country;
     private String streetName;
     private String postCode;
     private String type;
-    private UserDto userDetails;
 
     public String getAddressId() {
         return addressId;
@@ -22,14 +16,6 @@ public class AddressDto implements Serializable {
 
     public void setAddressId(String addressId) {
         this.addressId = addressId;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
     }
 
     public String getCity() {
@@ -72,11 +58,4 @@ public class AddressDto implements Serializable {
         this.type = type;
     }
 
-    public UserDto getUserDetails() {
-        return userDetails;
-    }
-
-    public void setUserDetails(UserDto userDetails) {
-        this.userDetails = userDetails;
-    }
 }

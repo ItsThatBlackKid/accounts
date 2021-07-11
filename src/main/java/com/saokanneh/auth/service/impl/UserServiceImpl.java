@@ -4,10 +4,12 @@ import com.saokanneh.auth.exception.UserServiceException;
 import com.saokanneh.auth.io.entity.UserEntity;
 import com.saokanneh.auth.io.repositories.UserRepository;
 import com.saokanneh.auth.service.UserService;
+import com.saokanneh.auth.shared.AmazonSES;
 import com.saokanneh.auth.shared.Utils;
+import com.saokanneh.auth.shared.dto.AddressDto;
 import com.saokanneh.auth.shared.dto.UserDto;
 import com.saokanneh.auth.ui.model.response.ErrorMessages;
-import org.springframework.beans.BeanUtils;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,23 +35,39 @@ public class UserServiceImpl implements UserService {
     @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Autowired
+    AmazonSES ses;
+
     @Override
     public UserDto createUser(UserDto user) {
 
 
         if(userRepo.findUserByEmail(user.getEmail()) != null) throw new RuntimeException("Record already exists");
 
-        UserEntity userEntity = new UserEntity();
-        BeanUtils.copyProperties(user, userEntity);
+        for(int i = 0; i < user.getAddresses().size(); i++) {
+            AddressDto addressDto = user.getAddresses().get(i);
+            addressDto.setUserDetails(user);
+            addressDto.setAddressId(utils.generateAddressId(30));
+            user.getAddresses().set(i, addressDto);
+        }
+
+        ModelMapper modelMapper = new ModelMapper();
+
+        UserEntity userEntity = modelMapper.map(user, UserEntity.class);
 
         String publicUserId = utils.generateUserId(30);
         userEntity.setUserId(publicUserId);
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        userEntity.setEmailVerificationToken(Utils.generateEmailVerificationToken(publicUserId));
+        userEntity.setEmailVerificationStatus(Boolean.FALSE);
 
         UserEntity storedUser = userRepo.save(userEntity);
 
-        UserDto returnVal = new UserDto();
-        BeanUtils.copyProperties(storedUser, returnVal);
+        ses.verifyEmail(modelMapper.map(storedUser, UserDto.class));
+
+        UserDto returnVal = modelMapper.map(storedUser, UserDto.class);
+
+
         return returnVal;
     }
 
@@ -59,17 +77,20 @@ public class UserServiceImpl implements UserService {
 
         if(userEntity == null) throw new UsernameNotFoundException(email);
 
-        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+//        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+        boolean enabled = userEntity.getEmailVerificationStatus();
+        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
+                userEntity.getEmailVerificationStatus(), true,
+                true,true, new ArrayList<>());
     }
 
     @Override
     public UserDto getUser(String email) {
-        UserDto userDto = new UserDto();
         UserEntity userEntity = userRepo.findUserByEmail(email);
 
         if(userEntity == null) throw new UsernameNotFoundException(email);
-
-        BeanUtils.copyProperties(userEntity, userDto);
+        ModelMapper mapper = new ModelMapper();
+        UserDto userDto = mapper.map(userEntity, UserDto.class);
         return userDto;
     }
 
@@ -79,15 +100,13 @@ public class UserServiceImpl implements UserService {
 
         if(entity == null) throw new UsernameNotFoundException("User with id '" + userId + "' not found");
 
-        UserDto dto = new UserDto();
-        BeanUtils.copyProperties(entity, dto);
+        UserDto dto = new ModelMapper().map(entity, UserDto.class);
 
         return dto;
     }
 
     @Override
     public UserDto updateUser(String userId, UserDto details) {
-        UserDto returnVal = new UserDto();
 
         UserEntity entity = userRepo.findByUserId(userId);
 
@@ -96,7 +115,7 @@ public class UserServiceImpl implements UserService {
         entity.setLastName(details.getLastName());
         userRepo.save(entity);
 
-        BeanUtils.copyProperties(entity, returnVal);
+        UserDto returnVal = new ModelMapper().map(entity, UserDto.class);
 
         return returnVal;
     }
@@ -120,12 +139,27 @@ public class UserServiceImpl implements UserService {
         List<UserEntity> users = usersPage.getContent();
 
         for(UserEntity entity: users) {
-            UserDto dto = new UserDto();
-            BeanUtils.copyProperties(entity,dto);
+            UserDto dto = new ModelMapper().map(entity, UserDto.class);
             returnVal.add(dto);
         }
 
 
+        return returnVal;
+    }
+
+    @Override
+    public boolean verifyEmailToken(String token) {
+        boolean returnVal = false;
+        UserEntity entity = userRepo.findUserByEmailVerificationToken(token);
+        if(entity != null) {
+            boolean tokenExpired = Utils.hasTokenExpired(token);
+            if(!tokenExpired) {
+                entity.setEmailVerificationToken(null);
+                entity.setEmailVerificationStatus(Boolean.TRUE);
+                userRepo.save(entity);
+                returnVal = true;
+            }
+        }
         return returnVal;
     }
 }
